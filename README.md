@@ -1,8 +1,7 @@
 # Chess Engine
-
 - A simple chess engine with minimax + alpha-beta pruning AI.
 
-# AI Details (for those who are curious)
+# AI Details
 - Algorithm: Negamax with alpha-beta pruning
 - Evaluation: Material + piece-square tables (PST)
 - Move ordering: MVV-LVA (Most Valuable Victim – Least Valuable Attacker) for better pruning

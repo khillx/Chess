@@ -69,7 +69,6 @@
     letter-spacing: 0.04em;
   }
 
-  /* ---- BOARD AREA ---- */
   .board-area {
     display: flex;
     flex-direction: column;
@@ -164,7 +163,6 @@
     pointer-events: none;
   }
 
-  /* Piece rendering */
   .piece {
     width: 56px;
     height: 56px;
@@ -191,7 +189,6 @@
 
   .square:hover .piece { transform: scale(1.07); }
 
-  /* ---- PANELS ---- */
   .panel {
     background: var(--panel-bg);
     border: 1px solid var(--panel-border);
@@ -210,7 +207,6 @@
     opacity: 0.9;
   }
 
-  /* Captured pieces */
   .captured-row {
     display: flex;
     flex-wrap: wrap;
@@ -236,7 +232,6 @@
     margin-top: 6px;
   }
 
-  /* Controls */
   .controls { display: flex; flex-direction: column; gap: 10px; }
 
   .btn {
@@ -300,7 +295,6 @@
     text-align: center;
   }
 
-  /* Status */
   .status {
     font-family: 'Cinzel', serif;
     font-size: 0.85rem;
@@ -322,7 +316,6 @@
   .status.checkmate { background: rgba(200,20,20,0.2); color: #aa1010; }
   .status.stalemate { background: rgba(100,100,100,0.15); }
 
-  /* Move history */
   .move-history {
     max-height: 200px;
     overflow-y: auto;
@@ -340,7 +333,6 @@
   .move-num { color: rgba(26,106,168,0.6); min-width: 22px; }
   .move-white, .move-black { min-width: 55px; }
 
-  /* AI info */
   .ai-info {
     font-size: 0.68rem;
     opacity: 0.55;
@@ -439,7 +431,7 @@
 
   <!-- Left panel: Black captured + move history -->
   <div>
-    <h1>♟ Chess</h1>
+    <h1>Chess</h1>
     <div class="subtitle">Minimax · Alpha-Beta Pruning</div>
     <div class="panel" style="margin-bottom:14px">
       <div class="panel-title">Captured Pieces</div>
@@ -455,7 +447,6 @@
     </div>
   </div>
 
-  <!-- Board -->
   <div class="board-area">
     <div class="board-wrap">
       <div class="board-outer">
@@ -506,7 +497,6 @@
 
 </div>
 
-<!-- Promotion Modal -->
 <div class="modal-overlay" id="promo-modal">
   <div class="modal">
     <h3>Promote Pawn</h3>
@@ -515,11 +505,9 @@
 </div>
 
 <script>
-// ============================================================
-// Constants
-// ============================================================
+
 const PIECE_SYMBOLS = {
-  // white
+  // white (Claude suggestion for symbols, might change later)
   1:  '♙', 2: '♘', 3: '♗', 4: '♖', 5: '♕', 6: '♔',
   // black
   [-1]:'♟', [-2]:'♞', [-3]:'♝', [-4]:'♜', [-5]:'♛', [-6]:'♚'
@@ -529,13 +517,10 @@ const FILES = ['a','b','c','d','e','f','g','h'];
 const WHITE = 1, BLACK = -1;
 const QUEEN=5, ROOK=4, BISHOP=3, KNIGHT=2;
 
-// ============================================================
-// State
-// ============================================================
 let gameState = null;
 let selectedSquare = null;
 let legalMovesForSelected = [];
-let playerColor = 'white'; // 'white','black','both'
+let playerColor = 'white';
 let aiDepth = 3;
 let gameOver = false;
 let moveHistory = [];
@@ -544,9 +529,6 @@ let capturedByBlack = [];
 let lastMove = null;
 let promoResolve = null;
 
-// ============================================================
-// Init
-// ============================================================
 document.addEventListener('DOMContentLoaded', () => {
   buildLabels();
   newGame();
@@ -569,9 +551,6 @@ function buildLabels() {
   }
 }
 
-// ============================================================
-// API calls
-// ============================================================
 async function api(endpoint, body) {
   const res = await fetch('/api/' + endpoint, {
     method: 'POST',
@@ -599,15 +578,11 @@ async function newGame() {
   document.getElementById('advantage-display').textContent = '';
   document.getElementById('ai-info').textContent = '—';
 
-  // If player is black, AI plays white first
   if (playerColor === 'black') {
     await doAIMove();
   }
 }
 
-// ============================================================
-// Board rendering
-// ============================================================
 function renderAll() {
   const grid = document.getElementById('board-grid');
   grid.innerHTML = '';
@@ -616,7 +591,6 @@ function renderAll() {
   const inCheck = gameState.in_check;
   const kingColor = gameState.turn;
 
-  // Find king pos if in check
   let checkKingPos = null;
   if (inCheck) {
     for (let r = 0; r < 8; r++) {
@@ -666,16 +640,12 @@ function renderAll() {
   }
 }
 
-// ============================================================
-// Game interaction
-// ============================================================
 async function onSquareClick(row, col) {
   if (gameOver) return;
   const board = gameState.board;
   const piece = board[row][col];
   const turn = gameState.turn; // 1=white, -1=black
 
-  // If it's AI's turn (in single-player mode), ignore clicks
   if (!isPlayerTurn()) return;
 
   // Try to make a move if a square is selected
@@ -709,7 +679,7 @@ async function onSquareClick(row, col) {
   if (piece !== 0 && (turn === WHITE ? piece > 0 : piece < 0)) {
     selectedSquare = [row, col];
     const data = await api('legal_moves', {board: gameState, row, col});
-    legalMovesForSelected = data.moves; // [{0:tr,1:tc,2:promo}] actually tuples
+    legalMovesForSelected = data.moves;
     renderAll();
   } else {
     selectedSquare = null;
@@ -797,9 +767,6 @@ function isPlayerTurn() {
   return false;
 }
 
-// ============================================================
-// Promotion dialog
-// ============================================================
 function askPromotion(color) {
   return new Promise(resolve => {
     promoResolve = resolve;
@@ -822,9 +789,6 @@ function askPromotion(color) {
   });
 }
 
-// ============================================================
-// Status & UI updates
-// ============================================================
 function updateStatus() {
   const statusEl = document.getElementById('status-display');
   statusEl.className = 'status';
@@ -911,9 +875,6 @@ function renderMoveHistory() {
   div.scrollTop = div.scrollHeight;
 }
 
-// ============================================================
-// Settings
-// ============================================================
 function setPlayerColor(c) {
   playerColor = c;
   ['white','black','both'].forEach(id => {

@@ -40,11 +40,9 @@ def make_move():
     # Convert promo back to int or None
     move = (move[0], move[1], move[2], move[3], move[4] if len(move) > 4 else None)
     
-    # Validate move is legal
     legal = board.generate_legal_moves()
     move_list = [(fr, fc, tr, tc, promo) for (fr, fc, tr, tc, promo) in legal]
     
-    # Check move matches (handle promo=None)
     fr, fc, tr, tc, promo = move
     matched = None
     for lm in move_list:
