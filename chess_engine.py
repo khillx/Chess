@@ -1,14 +1,7 @@
-"""
-Complete Chess Engine with:
-- Full board/piece management
-- Legal move generation (including castling, en passant, promotion)
-- Check/checkmate/stalemate detection
-- AI using Minimax with Alpha-Beta Pruning
-"""
+#Author: Nicholas Marchese
 
 from copy import deepcopy
 
-# Piece constants
 EMPTY = 0
 PAWN, KNIGHT, BISHOP, ROOK, QUEEN, KING = 1, 2, 3, 4, 5, 6
 WHITE, BLACK = 1, -1
@@ -104,29 +97,25 @@ class ChessBoard:
         self.reset()
 
     def reset(self):
-        # board[row][col]: positive = white, negative = black
-        # row 0 = rank 8 (black back rank), row 7 = rank 1 (white back rank)
         self.board = [[EMPTY]*8 for _ in range(8)]
         self.turn = WHITE
         self.castling_rights = {
             WHITE: {'kingside': True, 'queenside': True},
             BLACK: {'kingside': True, 'queenside': True}
         }
-        self.en_passant_target = None  # (row, col) square that can be captured en passant
+        self.en_passant_target = None
         self.halfmove_clock = 0
         self.fullmove_number = 1
         self.move_history = []
         self._setup_pieces()
 
     def _setup_pieces(self):
-        # Black pieces (row 0 = rank 8)
         back_row = [ROOK, KNIGHT, BISHOP, QUEEN, KING, BISHOP, KNIGHT, ROOK]
         for col, piece in enumerate(back_row):
             self.board[0][col] = -piece
         for col in range(8):
             self.board[1][col] = -PAWN
 
-        # White pieces (row 7 = rank 1)
         for col, piece in enumerate(back_row):
             self.board[7][col] = piece
         for col in range(8):
@@ -155,19 +144,15 @@ class ChessBoard:
         return None
 
     def is_square_attacked(self, row, col, by_color):
-        """Check if (row, col) is attacked by any piece of by_color."""
-        # Knight attacks
         for dr, dc in [(-2,-1),(-2,1),(-1,-2),(-1,2),(1,-2),(1,2),(2,-1),(2,1)]:
             r, c = row+dr, col+dc
             if self.is_valid(r,c) and self.board[r][c] == by_color * KNIGHT:
                 return True
-        # Pawn attacks
-        pawn_dir = -by_color  # direction pawns of by_color move
+        pawn_dir = -by_color
         for dc in [-1, 1]:
             r, c = row + pawn_dir, col + dc
             if self.is_valid(r, c) and self.board[r][c] == by_color * PAWN:
                 return True
-        # Sliding pieces (rook/queen)
         for dr, dc in [(0,1),(0,-1),(1,0),(-1,0)]:
             r, c = row+dr, col+dc
             while self.is_valid(r,c):
@@ -177,7 +162,6 @@ class ChessBoard:
                         return True
                     break
                 r += dr; c += dc
-        # Sliding pieces (bishop/queen)
         for dr, dc in [(1,1),(1,-1),(-1,1),(-1,-1)]:
             r, c = row+dr, col+dc
             while self.is_valid(r,c):
@@ -187,7 +171,6 @@ class ChessBoard:
                         return True
                     break
                 r += dr; c += dc
-        # King
         for dr in [-1,0,1]:
             for dc in [-1,0,1]:
                 if dr==0 and dc==0: continue
@@ -203,7 +186,6 @@ class ChessBoard:
         return self.is_square_attacked(king_pos[0], king_pos[1], -color)
 
     def generate_pseudo_moves(self, color):
-        """Generate all pseudo-legal moves (may leave king in check)."""
         moves = []
         for r in range(8):
             for c in range(8):
@@ -227,11 +209,10 @@ class ChessBoard:
 
     def _pawn_moves(self, row, col, color):
         moves = []
-        direction = -color  # white moves up (decreasing row), black moves down
+        direction = -color
         start_row = 6 if color == WHITE else 1
         promo_row = 0 if color == WHITE else 7
 
-        # Forward move
         nr = row + direction
         if self.is_valid(nr, col) and self.board[nr][col] == EMPTY:
             if nr == promo_row:
@@ -239,13 +220,11 @@ class ChessBoard:
                     moves.append((row, col, nr, col, promo))
             else:
                 moves.append((row, col, nr, col, None))
-            # Double push from starting row
             if row == start_row:
                 nr2 = row + 2*direction
                 if self.board[nr2][col] == EMPTY:
                     moves.append((row, col, nr2, col, None))
 
-        # Captures
         for dc in [-1, 1]:
             nc = col + dc
             if not self.is_valid(nr, nc): continue
@@ -334,7 +313,6 @@ class ChessBoard:
         return legal
 
     def apply_move(self, move, update_turn=True):
-        """Apply a move and update board state."""
         fr, fc, tr, tc, promo = move
         piece = self.board[fr][fc]
         color = self.piece_color(piece)
@@ -347,31 +325,27 @@ class ChessBoard:
 
         self.en_passant_target = None
 
-        # En passant capture
         if pt == PAWN and (tr, tc) == old_ep:
-            ep_capture_row = tr + color  # the pawn being captured is one row behind the destination
+            ep_capture_row = tr + color
             self.board[ep_capture_row][tc] = EMPTY
 
-        # Castling rook move
         if pt == KING:
             back_rank = 7 if color == WHITE else 0
-            if fc == 4 and tc == 6:  # kingside
+            if fc == 4 and tc == 6:
                 self.board[back_rank][5] = self.board[back_rank][7]
                 self.board[back_rank][7] = EMPTY
-            elif fc == 4 and tc == 2:  # queenside
+            elif fc == 4 and tc == 2:
                 self.board[back_rank][3] = self.board[back_rank][0]
                 self.board[back_rank][0] = EMPTY
             self.castling_rights[color]['kingside'] = False
             self.castling_rights[color]['queenside'] = False
 
-        # Update castling rights on rook move
         if pt == ROOK:
             back_rank = 7 if color == WHITE else 0
             if fr == back_rank:
                 if fc == 7: self.castling_rights[color]['kingside'] = False
                 if fc == 0: self.castling_rights[color]['queenside'] = False
 
-        # If rook is captured, remove castling rights
         if captured != EMPTY:
             cap_color = self.piece_color(captured)
             cap_back = 7 if cap_color == WHITE else 0
@@ -379,15 +353,12 @@ class ChessBoard:
                 if tc == 7: self.castling_rights[cap_color]['kingside'] = False
                 if tc == 0: self.castling_rights[cap_color]['queenside'] = False
 
-        # Set en passant target
         if pt == PAWN and abs(tr - fr) == 2:
             self.en_passant_target = ((fr + tr) // 2, tc)
 
-        # Move the piece
         self.board[tr][tc] = piece if not promo else color * promo
         self.board[fr][fc] = EMPTY
 
-        # Halfmove clock
         if pt == PAWN or captured != EMPTY:
             self.halfmove_clock = 0
         else:
@@ -409,8 +380,8 @@ class ChessBoard:
     def is_draw(self):
         return self.is_stalemate() or self.halfmove_clock >= 100
 
+    # For Json serialization
     def to_dict(self):
-        """Serialize board state to dict for JSON."""
         return {
             'board': self.board,
             'turn': self.turn,
@@ -450,7 +421,6 @@ class ChessAI:
         self.nodes_evaluated = 0
 
     def evaluate(self, board):
-        """Static evaluation of board position."""
         score = 0
         for r in range(8):
             for c in range(8):
@@ -460,7 +430,6 @@ class ChessAI:
                 color = board.piece_color(piece)
                 pt = board.piece_type(piece)
                 value = PIECE_VALUES[pt]
-                # Positional bonus
                 table = PIECE_TABLES.get(pt)
                 if table:
                     if color == WHITE:
@@ -472,7 +441,6 @@ class ChessAI:
         return score
 
     def order_moves(self, board, moves):
-        """Order moves to improve alpha-beta pruning (captures first)."""
         def move_score(move):
             fr, fc, tr, tc, promo = move
             target = board.board[tr][tc]
