@@ -148,7 +148,7 @@ class ChessBoard:
             r, c = row+dr, col+dc
             if self.is_valid(r,c) and self.board[r][c] == by_color * KNIGHT:
                 return True
-        pawn_dir = -by_color
+        pawn_dir = by_color
         for dc in [-1, 1]:
             r, c = row + pawn_dir, col + dc
             if self.is_valid(r, c) and self.board[r][c] == by_color * PAWN:
