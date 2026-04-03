@@ -1,6 +1,6 @@
 # Chess Engine
 - A simple chess engine with minimax + alpha-beta pruning AI.
-- Playable on: (https://chess-smoky-eta.vercel.app/)
+- Playable on: https://chess-smoky-eta.vercel.app/
 
 # AI Details
 - Algorithm: Negamax with alpha-beta pruning
